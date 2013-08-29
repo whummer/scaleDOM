@@ -1,0 +1,113 @@
+1) Supported XML:
+	o Depends on the XmlParser implementation, see StaxXmlParser for more information about the default implementation.  
+
+2) Apache Xerces support:
+	o As soon as ScaleDOM is loaded, Apache Xerces' DOM implementations (yes, there are multiple ones) are no longer
+	  supported as some base classes in the org.apache.xerces.dom package are replaced with ScaleDOM variants.
+
+3) DOM properties:
+	o The DOM tree is lazily loaded on demand, only nodes on the same level as the Document Element node are guaranteed
+	  to be always in-memory. How many and which nodes are loaded at once is decided by an implementation of
+	  LazyLoadingStrategy. For performance reasons one could write an implementation to be optimized for a single type
+	  of XML document. At the moment strategy implementations must follow one rule: the strategy must load either all
+	  children of a parent node or none at all (therefore sibling-handling becomes much more easier).
+	o The following node types are dropped and not included into the DOM tree:
+		o DocumentType and its sub nodes:
+			o Entity
+			o Notation
+		o EntityReference (make sure that the XmlParser expands entity references, this is the default when using the
+		    default XmlParser implementation)
+	o All other node types (CDATASection, Comment, Element (including its Attr nodes), ProcessingInstruction, Text) are
+	  referenced by their respective parent using a SoftReference<List<ChildNode>> only. The Java GC may therefore
+	  decide to discard the children collection (as a whole) at any time - if and only if no other subject points to a
+	  child node with a "hard" reference (Note: it does not matter how many levels further down in the tree the node
+	  resides to which the external hard reference is pointing to, as each node's parent reference is a hard reference
+	  as well).
+	o If nodes are requested which are currently not loaded, the parent node instructs the Document to reload them. The
+	  direct children are guaranteed to be loaded, to improve performance, the LazyLoadingStrategy again is responsible
+	  for how many and which additional nodes are loaded.
+	o For reloading purposes, each parent node knows its location in the document source.
+	o If the Java GC is too eager with removing SoftReferences (normally it keeps them as long as there is no memory
+	  pressure), and/or somebody wants to use its own cache logic it is possible to add an additional NodeCacheManager
+	  implementation to the Document. A NCM is nothing more than "a subject, holding hard references to children lists".
+	  NCMs are not yet implemented, however, one can see the unload-prevention already at work in the
+	  ScaleDomDocument.persistentChildrenLists field.
+
+4) Current restrictions of ScaleDOM:
+	o Modifications are not yet supported.
+		o However it is probably easy to implement: the ScaleDomDocument already has the capability to prevent children
+		  lists from unloading. All modified nodes have to be prevented from unlaoding as the modifications cannot be
+		  reloaded. Therefore all that must be done is to call doc.modified(children) from the parent node of the
+		  modified node.
+		o A more advanced implementation could replace the current doc.modified(children) implementation and save
+		  modifications in some persistent store - modifying the reload-coordinates of modified nodes.
+		o Note: numberOfChildren field must be adapted correspondingly to any modification.
+	o EntityReferences are not yet supported.
+		o This is due to the missing DTD when reloading only part of the document.
+		o To support entity refernces it is probably best to save the whole DTD during initial parsing. When reloading,
+		  all entity definitions should be put on a fake-root element, so the parser is able to work correctly (use the
+		  same methodology as is already implemented on namespaces).
+	o Only fixed-width character encodings are supported.
+		o All available XmlParser implementations are not able to provide byte character offsets for occurred XML
+		  events. Therefore reloading can only be done using character offsets, which forces us to only support
+		  fixed-width character encodings (and therefore not supporting UTF-8).
+		o One possible solution is to do the reloading by not using a random-access implementation but by skipping n
+		  characters (not bytes) from the beginning of the file and start loading then, however, this is very slow.
+		o Another solution is to write our own XmlParser implementation or wait until other XML parsers are able to
+		  provide byte offset data (Aalto parser?).
+		o More information: http://stackoverflow.com/questions/3176610/ & http://stackoverflow.com/questions/5664301/
+	o LazyLoadingStrategy must either load all or none child nodes.
+		o This restriction currently makes sibling-handling much more easier.
+		o Is it really better to load only a part of the child nodes? Is there a performance improvement? Maybe if one
+		  is just loading from the beginning of the file, however, splitting the file in more files would be the
+		  better (and easier) option...
+	o StAX parser supports only 2GB as maximum file size (int is used in XMLEvent.Location.CharacterOffset) 
+
+5) Important notes:
+	o Unfortunately XPath is transforming the whole DOM into its internal DTM format, therefore XPath usage on huge
+	  files is not recommended -> use DOM directly if you want to get the ScaleDOM improvements.
+	o Why do we edit org.apache.xerces.dom.ParentNode instead of providing proxy classes?
+		o Unfortunately Xerces' internal implementation casts nodes to its own internal classes and sometimes accesses
+		  their fields directly without using an accessor method (something you can't intercept with a proxy).
+		o Furthermore we can save memory by removing unused fields and can easily replace each call of getChildNodes()
+		  with either getCurrentlyLoadedChildNodes() or getAllChildNodes().
+		o Another solution would be aspect-oriented programming, however, AOP costs a lot of performance and in some
+		  cases it has been found that adapting the original classes was much easier than AOP would have been. 
+
+6) Further possible areas of improvement:
+	o Support DOM modifications (see above).
+	o Support variable-width character encodings (see above).
+	o Support DTD and EntityReferences (see above).
+	o Do not restrict the LazyLoadingStrategy to load either all or none child nodes (see above).
+	o Implement and integrate a NodeCacheManager if we want to explicitly control unloading of elements.
+		o Check if EHCache or another caching system is useful for this task. 
+	o Use memory mapping instead of FileInputStream or RandomAccessFile for I/O (new ReaderFactory implementation).
+	o Find out why the SPACE event never occurs: http://stackoverflow.com/questions/15010864/
+	o Check if it is possible to instruct XPath to transform only required parts of the document into internal DTM.
+	o Repack whole org.apache.xerces.dom package and required utilities so we do not disturb any outside Xerces usage.
+	o Either remove SoftReference-Unload-Logging or find out how to end the ReferenceQueueLogThread as soon as the
+	  ScaleDomDocument is gone.
+	o Fix the LowMemoryDetector to prevent all OutOfMemoryErrors.
+	o Maybe improve performance by tuning the Java GC.
+	    Java SE 6 HotSpot[tm] Virtual Machine Garbage Collection Tuning
+	      http://www.oracle.com/technetwork/java/javase/gc-tuning-6-140523.html
+	    How Hotspot Decides to Clear SoftReferences
+	      http://jeremymanson.blogspot.co.at/2009/07/how-hotspot-decides-to-clear_07.html
+	o Add document source encoding detection, convert variable-width encodings to fixed-width encodings if required.
+
+7) Further possible improvements of the DOM replacements:
+	o Check if createElementNS/createAttribute is used correctly (see todos).
+	o Check for possible performance improvements (e.g. setTextContent, but also in base/derived classes).
+	o Check if serialization works (untested by now).
+
+8) Other interesting projects:
+	o VTD-XML http://vtd-xml.sourceforge.net/
+	  	Pros: o Better performance
+	  	Cons: o No lazy loading, low memory consumption compared to Xerces, but still 1,x times the size of the
+	  	        original file
+	  	      o Not DOM-compliant
+	o http://andreas.haufler.info/2012/01/conveniently-processing-large-xml-files.html
+		Pros: o Better XPath performance
+		Cons: o Programming for each XML file is required
+		      o We could actually do the same with ScaleDOM by providing more options for the LazyLoadingStrategy:
+		        should_load_now, should_load_later, should_never_load, also creating the same partial DOM. 

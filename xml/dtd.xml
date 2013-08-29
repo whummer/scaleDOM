@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE page [
+	<!ELEMENT page (title, content, comment)>
+	<!ELEMENT title (#PCDATA)>
+	<!ELEMENT content (#PCDATA)>
+	<!ELEMENT comment (#PCDATA)>
+]>
+<page>
+	<title>Home</title>
+	<content>Here is some content :)</content>
+	<comment>Default page</comment>
+</page>
