@@ -96,8 +96,8 @@ public class ScaleDomDocument extends DocumentImpl implements ScaleDomDocumentIn
 		this.parser = parser;
 		this.componentFactory = componentFactory;
 		this.readerFactory = componentFactory.getNewInstance(ReaderFactory.class, source);
-		this.persistentChildrenLists = new ArrayList<>();
-		this.unloadQueue = new ReferenceQueue<>();
+		this.persistentChildrenLists = new ArrayList<LinkedList<ChildNode>>();
+		this.unloadQueue = new ReferenceQueue<LinkedList<ChildNode>>();
 		consistent = true;
 
 		// Start reference queue log thread
@@ -128,9 +128,13 @@ public class ScaleDomDocument extends DocumentImpl implements ScaleDomDocumentIn
 		// are flagged as persistent.
 		final LinkedList<ChildNode> preventReferenceRemoval = this.getLoadedChildNodes();
 
-		try (final Reader reader = readerFactory.newReader()) {
+		Reader reader = null;
+		try {
+			reader = readerFactory.newReader();
 			final LazyLoadingStrategy strategy = componentFactory.getNewInstance(LazyLoadingStrategy.class, 0);
-			try (final LoadProcess process = new LoadProcess(this, this, loadType, strategy, readerFactory)) {
+			LoadProcess process = null;
+			try {
+				process = new LoadProcess(this, this, loadType, strategy, readerFactory);
 				final boolean ok = parser.parse(reader, process);
 				if (!ok) {
 					setInconsistent();
@@ -140,6 +144,12 @@ public class ScaleDomDocument extends DocumentImpl implements ScaleDomDocumentIn
 			} catch (final SAXException ex) {
 				log.error("Could not load nodes due to parser exception.", ex);
 				setInconsistent();
+			} finally {
+				if(process != null) {
+					try {
+						process.close();
+					} catch (IOException e) { }
+				}
 			}
 		} catch (final IOException ex) {
 			log.error("Could not load nodes due to I/O exception.", ex);
@@ -147,6 +157,12 @@ public class ScaleDomDocument extends DocumentImpl implements ScaleDomDocumentIn
 		} finally {
 			// Mark all direct children of the document as persistent (= all nodes on the root level)
 			persistentChildrenLists.add(preventReferenceRemoval);
+
+			if(reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) { }
+			}
 
 			log.debug(preventReferenceRemoval.size() + " nodes have been flagged as persistent.");
 		}
@@ -176,7 +192,10 @@ public class ScaleDomDocument extends DocumentImpl implements ScaleDomDocumentIn
 		 * {@link #load(ParentNode)} - see {@link ParentNode#getChildren(boolean)}.
 		 */
 		final NodeLocation location = parent.getNodeLocation();
-		try (final Reader readerForLocation = readerFactory.newReaderForLocation(location)) {
+		Reader readerForLocation = null;
+		try {
+			readerForLocation = readerFactory.newReaderForLocation(location);
+
 			// Build fake root element containing all required namespace declarations
 			final String fakeElementStart = "<ScaleDOM " + buildNamespaceDeclarations(parent) + ">";
 			final String fakeElementEnd = "</ScaleDOM>";
@@ -185,8 +204,12 @@ public class ScaleDomDocument extends DocumentImpl implements ScaleDomDocumentIn
 			final LazyLoadingStrategy strategy = componentFactory.getNewInstance(LazyLoadingStrategy.class,
 					DOMUtils.getAbsoluteLevel(parent));
 			final int elementsToSkip = 3; // StartDocument, StartElement for fakeElementStart, StartElement for parent
-			try (final LoadProcess process = new LoadProcess(this, parent, loadType, strategy, readerFactory,
-					elementsToSkip, additionalOffset)) {
+			
+			LoadProcess process = null;
+			try {
+				process = new LoadProcess(this, parent, loadType, strategy, 
+						readerFactory, elementsToSkip, additionalOffset);
+
 				final Reader reader = new CompositeReader(new StringReader(fakeElementStart), readerForLocation,
 						new StringReader(fakeElementEnd));
 				final boolean ok = parser.parse(reader, process);
@@ -198,6 +221,10 @@ public class ScaleDomDocument extends DocumentImpl implements ScaleDomDocumentIn
 			} catch (final SAXException ex) {
 				log.error("Could not load nodes due to parser exception.", ex);
 				setInconsistent();
+			} finally {
+				if(process != null) {
+					process.close();
+				}
 			}
 		} catch (final IOException ex) {
 			log.error("Could not load nodes due to I/O exception.", ex);
@@ -205,6 +232,12 @@ public class ScaleDomDocument extends DocumentImpl implements ScaleDomDocumentIn
 		} catch (final InstantiationException ex) {
 			log.error("Could not instantiate required components for the load process.", ex);
 			setInconsistent();
+		} finally {
+			if(readerForLocation != null) {
+				try {
+					readerForLocation.close();
+				} catch (IOException e) { }
+			}
 		}
 
 		isLoading = false;
@@ -220,7 +253,7 @@ public class ScaleDomDocument extends DocumentImpl implements ScaleDomDocumentIn
 	}
 
 	private String buildNamespaceDeclarations(ParentNode parent) {
-		final Map<String, String> namespaces = new HashMap<>();
+		final Map<String, String> namespaces = new HashMap<String, String>();
 
 		for (parent = (ParentNode) parent.getParentNode(); parent != null; parent = (ParentNode) parent.getParentNode()) {
 			// Only Element nodes may have namespace declarations on them

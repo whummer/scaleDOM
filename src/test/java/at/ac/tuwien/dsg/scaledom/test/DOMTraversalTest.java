@@ -7,11 +7,11 @@ import org.w3c.dom.Document;
 import at.ac.tuwien.dsg.scaledom.dom.ScaleDomDocumentInterface;
 import at.ac.tuwien.dsg.scaledom.test.TestData.TestFile;
 import at.ac.tuwien.dsg.scaledom.test.util.MeasuredTask;
-import at.ac.tuwien.dsg.scaledom.test.util.dom.DOMTraverser;
 import at.ac.tuwien.dsg.scaledom.test.util.dom.FirstOnLevelCallback;
 import at.ac.tuwien.dsg.scaledom.test.util.dom.FullOutputCallback;
 import at.ac.tuwien.dsg.scaledom.test.util.dom.MinimalOutputCallback;
 import at.ac.tuwien.dsg.scaledom.test.util.dom.NoOpCallback;
+import at.ac.tuwien.dsg.scaledom.util.DOMTraverser;
 
 public class DOMTraversalTest extends TestBase {
 

@@ -1,7 +1,8 @@
-package at.ac.tuwien.dsg.scaledom.test.perf.util.dom;
+package at.ac.tuwien.dsg.scaledom.util;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+
 
 /**
  * @author Dominik Rauch

@@ -42,7 +42,7 @@ public final class TestData {
 
 	private final static Map<Integer, TestFile> FILES;
 	static {
-		FILES = new HashMap<>();
+		FILES = new HashMap<Integer, TestFile>();
 		FILES.put(FILE_BOOKS, new TestFile(new File("xml/books.xml"), StandardCharsets.ISO_8859_1.name()));
 		FILES.put(FILE_BOOKS_NS, new TestFile(new File("xml/booksns.xml"), StandardCharsets.ISO_8859_1.name()));
 		FILES.put(FILE_SIMPLE, new TestFile(new File("xml/simple.xml"), StandardCharsets.ISO_8859_1.name()));
@@ -58,7 +58,7 @@ public final class TestData {
 
 	private final static Map<Integer, String> XPATHS;
 	static {
-		XPATHS = new HashMap<>();
+		XPATHS = new HashMap<Integer, String>();
 		XPATHS.put(XPATH_BOOKS, "/catalog");
 	}
 

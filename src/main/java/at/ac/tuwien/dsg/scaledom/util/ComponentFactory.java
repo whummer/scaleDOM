@@ -33,8 +33,8 @@ public class ComponentFactory {
 	 * Default constructor.
 	 */
 	public ComponentFactory() {
-		instances = new HashMap<>();
-		bindings = new HashMap<>();
+		instances = new HashMap<Class<?>, Object>();
+		bindings = new HashMap<Class<?>, Class<?>>();
 	}
 
 	/**
@@ -114,7 +114,13 @@ public class ComponentFactory {
 			throws InstantiationException {
 		try {
 			return ConstructorUtils.invokeConstructor(implType, args);
-		} catch (final IllegalAccessException | InvocationTargetException | NoSuchMethodException ex) {
+		} catch (final IllegalAccessException ex) {
+			throw new InstantiationException("Type '" + implType.getName() + "' could not be instantiated: "
+					+ ex.getMessage());
+		} catch (final InvocationTargetException ex) {
+			throw new InstantiationException("Type '" + implType.getName() + "' could not be instantiated: "
+					+ ex.getMessage());
+		} catch (final NoSuchMethodException ex) {
 			throw new InstantiationException("Type '" + implType.getName() + "' could not be instantiated: "
 					+ ex.getMessage());
 		}

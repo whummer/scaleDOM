@@ -12,8 +12,8 @@ import org.w3c.dom.Node;
 
 import at.ac.tuwien.dsg.scaledom.test.TestData.TestFile;
 import at.ac.tuwien.dsg.scaledom.test.util.MeasuredTask;
-import at.ac.tuwien.dsg.scaledom.test.util.dom.DOMTraverser;
 import at.ac.tuwien.dsg.scaledom.test.util.dom.FullOutputCallback;
+import at.ac.tuwien.dsg.scaledom.util.DOMTraverser;
 
 public class XPathTest extends TestBase {
 

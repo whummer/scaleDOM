@@ -107,7 +107,12 @@ public class DocumentFragmentImpl extends ParentNode implements DocumentFragment
 		ChildNode kid, next;
 
 		// <ScaleDOM>
-		final ChildNode firstChild = getFirstLoadedChildNode();
+		ChildNode firstChild = null;
+		if(isScaleDomEnabled()) {
+			firstChild = getFirstLoadedChildNode();
+		} else {
+			firstChild = this.firstChild;
+		}
 		// </ScaleDOM>
 		for (kid = firstChild; kid != null; kid = next) {
 			next = kid.nextSibling;

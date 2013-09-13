@@ -1,11 +1,7 @@
 1) Supported XML:
 	o Depends on the XmlParser implementation, see StaxXmlParser for more information about the default implementation.  
 
-2) Apache Xerces support:
-	o As soon as ScaleDOM is loaded, Apache Xerces' DOM implementations (yes, there are multiple ones) are no longer
-	  supported as some base classes in the org.apache.xerces.dom package are replaced with ScaleDOM variants.
-
-3) DOM properties:
+2) DOM properties:
 	o The DOM tree is lazily loaded on demand, only nodes on the same level as the Document Element node are guaranteed
 	  to be always in-memory. How many and which nodes are loaded at once is decided by an implementation of
 	  LazyLoadingStrategy. For performance reasons one could write an implementation to be optimized for a single type
@@ -33,7 +29,7 @@
 	  NCMs are not yet implemented, however, one can see the unload-prevention already at work in the
 	  ScaleDomDocument.persistentChildrenLists field.
 
-4) Current restrictions of ScaleDOM:
+3) Current restrictions of ScaleDOM:
 	o Modifications are not yet supported.
 		o However it is probably easy to implement: the ScaleDomDocument already has the capability to prevent children
 		  lists from unloading. All modified nodes have to be prevented from unlaoding as the modifications cannot be
@@ -63,7 +59,7 @@
 		  better (and easier) option...
 	o StAX parser supports only 2GB as maximum file size (int is used in XMLEvent.Location.CharacterOffset) 
 
-5) Important notes:
+4) Important notes:
 	o Unfortunately XPath is transforming the whole DOM into its internal DTM format, therefore XPath usage on huge
 	  files is not recommended -> use DOM directly if you want to get the ScaleDOM improvements.
 	o Why do we edit org.apache.xerces.dom.ParentNode instead of providing proxy classes?
@@ -74,7 +70,7 @@
 		o Another solution would be aspect-oriented programming, however, AOP costs a lot of performance and in some
 		  cases it has been found that adapting the original classes was much easier than AOP would have been. 
 
-6) Further possible areas of improvement:
+5) Further possible areas of improvement:
 	o Support DOM modifications (see above).
 	o Support variable-width character encodings (see above).
 	o Support DTD and EntityReferences (see above).
@@ -95,12 +91,12 @@
 	      http://jeremymanson.blogspot.co.at/2009/07/how-hotspot-decides-to-clear_07.html
 	o Add document source encoding detection, convert variable-width encodings to fixed-width encodings if required.
 
-7) Further possible improvements of the DOM replacements:
+6) Further possible improvements of the DOM replacements:
 	o Check if createElementNS/createAttribute is used correctly (see todos).
 	o Check for possible performance improvements (e.g. setTextContent, but also in base/derived classes).
 	o Check if serialization works (untested by now).
 
-8) Other interesting projects:
+7) Other interesting projects:
 	o VTD-XML http://vtd-xml.sourceforge.net/
 	  	Pros: o Better performance
 	  	Cons: o No lazy loading, low memory consumption compared to Xerces, but still 1,x times the size of the

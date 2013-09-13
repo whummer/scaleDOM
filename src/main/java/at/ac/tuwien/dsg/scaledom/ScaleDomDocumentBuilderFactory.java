@@ -39,8 +39,8 @@ public class ScaleDomDocumentBuilderFactory extends DocumentBuilderFactory {
 	 * Default constructor.
 	 */
 	public ScaleDomDocumentBuilderFactory() {
-		attributes = new HashMap<>();
-		features = new HashMap<>();
+		attributes = new HashMap<String, Object>();
+		features = new HashMap<String, Boolean>();
 
 		// Add features which are required to be supported
 		features.put(XMLConstants.FEATURE_SECURE_PROCESSING, false);

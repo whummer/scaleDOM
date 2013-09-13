@@ -57,7 +57,7 @@ public abstract class MeasuredTask<T> {
 		} catch (final Throwable t) {
 			// Store catched throwable
 			catchedThrowable = t;
-			throw t;
+			throw new Exception(t);
 		} finally {
 			// Stop time measurement
 			watch.stop();

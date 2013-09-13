@@ -185,7 +185,12 @@ public class EntityReferenceImpl extends ParentNode implements EntityReference {
 
 		String value = "";
 		// <ScaleDOM>
-		final ChildNode firstChild = (ChildNode) getChildNodes().item(0);
+		ChildNode firstChild = null;
+		if(isScaleDomEnabled()) {
+			firstChild = (ChildNode) getChildNodes().item(0);
+		} else {
+			firstChild = this.firstChild;
+		}
 		// </ScaleDOM>
 		if (firstChild != null) {
 			if (firstChild.getNodeType() == Node.ENTITY_REFERENCE_NODE) {
@@ -271,7 +276,12 @@ public class EntityReferenceImpl extends ParentNode implements EntityReference {
 			}
 			// Recursively set kids
 			// <ScaleDOM>
-			final ChildNode firstChild = getFirstLoadedChildNode();
+			ChildNode firstChild = null;
+			if(isScaleDomEnabled()) {
+				firstChild = getFirstLoadedChildNode();
+			} else {
+				firstChild = this.firstChild;
+			}
 			// </ScaleDOM>
 			for (ChildNode mykid = firstChild; mykid != null; mykid = mykid.nextSibling) {
 

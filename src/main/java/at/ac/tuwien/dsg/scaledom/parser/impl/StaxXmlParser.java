@@ -120,13 +120,13 @@ public class StaxXmlParser extends XmlParser {
 
 	@Override
 	public boolean isCoalescing() {
-		return (boolean) inputFactory.getProperty(XMLInputFactory.IS_COALESCING);
+		return (boolean)(Boolean) inputFactory.getProperty(XMLInputFactory.IS_COALESCING);
 	}
 
 	@Override
 	public boolean isExpandEntityReferences() {
 		// TODO: Is the following property correctly mapped?
-		return (boolean) inputFactory.getProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES);
+		return (boolean)(Boolean) inputFactory.getProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES);
 	}
 
 	@Override
@@ -141,12 +141,12 @@ public class StaxXmlParser extends XmlParser {
 
 	@Override
 	public boolean isNamespaceAware() {
-		return (boolean) inputFactory.getProperty(XMLInputFactory.IS_NAMESPACE_AWARE);
+		return (boolean)(Boolean) inputFactory.getProperty(XMLInputFactory.IS_NAMESPACE_AWARE);
 	}
 
 	@Override
 	public boolean isValidating() {
-		return (boolean) inputFactory.getProperty(XMLInputFactory.IS_VALIDATING);
+		return (boolean)(Boolean) inputFactory.getProperty(XMLInputFactory.IS_VALIDATING);
 	}
 
 	@Override
@@ -164,7 +164,9 @@ public class StaxXmlParser extends XmlParser {
 					final String namespace) throws XMLStreamException {
 				try {
 					return er.resolveEntity(publicID, systemID);
-				} catch (final SAXException | IOException ex) {
+				} catch (final SAXException ex) {
+					throw new XMLStreamException(ex);
+				} catch (final IOException ex) {
 					throw new XMLStreamException(ex);
 				}
 			}

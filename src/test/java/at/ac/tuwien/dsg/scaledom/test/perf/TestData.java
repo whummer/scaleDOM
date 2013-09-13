@@ -30,6 +30,9 @@ public final class TestData {
 	// XPaths for default files
 	public final static int XPATH_BOOKS = 100;
 
+	public final static String FILE_PATH = ".";
+	
+	
 	public static class TestFile {
 		public final File file;
 		public final String encoding;
@@ -42,23 +45,23 @@ public final class TestData {
 
 	private final static Map<Integer, TestFile> FILES;
 	static {
-		FILES = new HashMap<>();
-		FILES.put(FILE_BOOKS, new TestFile(new File("../xml/books.xml"), StandardCharsets.ISO_8859_1.name()));
-		FILES.put(FILE_BOOKS_NS, new TestFile(new File("../xml/booksns.xml"), StandardCharsets.ISO_8859_1.name()));
-		FILES.put(FILE_SIMPLE, new TestFile(new File("../xml/simple.xml"), StandardCharsets.ISO_8859_1.name()));
-		FILES.put(FILE_VARWIDTH, new TestFile(new File("../xml/varwidth.xml"), StandardCharsets.UTF_8.name()));
-		FILES.put(FILE_DTD, new TestFile(new File("../xml/dtd.xml"), StandardCharsets.ISO_8859_1.name()));
-		FILES.put(FILE_DEEP, new TestFile(new File("../xml/deep.xml"), StandardCharsets.ISO_8859_1.name()));
-		FILES.put(FILE_ACTORS, new TestFile(new File("../xml/big/actors20000.xml"), StandardCharsets.ISO_8859_1.name()));
-		FILES.put(FILE_DBLP, new TestFile(new File("../xml/big/dblp.xml"), StandardCharsets.ISO_8859_1.name()));
-		FILES.put(FILE_NASA, new TestFile(new File("../xml/big/nasa.xml"), StandardCharsets.ISO_8859_1.name()));
-		FILES.put(FILE_PSD, new TestFile(new File("../xml/big/psd7003.xml"), StandardCharsets.ISO_8859_1.name()));
-		FILES.put(FILE_TREEBANK, new TestFile(new File("../xml/big/treebank_e.xml"), StandardCharsets.ISO_8859_1.name()));
+		FILES = new HashMap<Integer, TestFile>();
+		FILES.put(FILE_BOOKS, new TestFile(new File(FILE_PATH + "/xml/books.xml"), StandardCharsets.ISO_8859_1.name()));
+		FILES.put(FILE_BOOKS_NS, new TestFile(new File(FILE_PATH + "/xml/booksns.xml"), StandardCharsets.ISO_8859_1.name()));
+		FILES.put(FILE_SIMPLE, new TestFile(new File(FILE_PATH + "/xml/simple.xml"), StandardCharsets.ISO_8859_1.name()));
+		FILES.put(FILE_VARWIDTH, new TestFile(new File(FILE_PATH + "/xml/varwidth.xml"), StandardCharsets.UTF_8.name()));
+		FILES.put(FILE_DTD, new TestFile(new File(FILE_PATH + "/xml/dtd.xml"), StandardCharsets.ISO_8859_1.name()));
+		FILES.put(FILE_DEEP, new TestFile(new File(FILE_PATH + "/xml/deep.xml"), StandardCharsets.ISO_8859_1.name()));
+		FILES.put(FILE_ACTORS, new TestFile(new File(FILE_PATH + "/xml/big/actors20000.xml"), StandardCharsets.ISO_8859_1.name()));
+		FILES.put(FILE_DBLP, new TestFile(new File(FILE_PATH + "/xml/big/dblp.xml"), StandardCharsets.ISO_8859_1.name()));
+		FILES.put(FILE_NASA, new TestFile(new File(FILE_PATH + "/xml/big/nasa.xml"), StandardCharsets.ISO_8859_1.name()));
+		FILES.put(FILE_PSD, new TestFile(new File(FILE_PATH + "/xml/big/psd7003.xml"), StandardCharsets.ISO_8859_1.name()));
+		FILES.put(FILE_TREEBANK, new TestFile(new File(FILE_PATH + "/xml/big/treebank_e.xml"), StandardCharsets.ISO_8859_1.name()));
 	}
 
 	private final static Map<Integer, String> XPATHS;
 	static {
-		XPATHS = new HashMap<>();
+		XPATHS = new HashMap<Integer, String>();
 		XPATHS.put(XPATH_BOOKS, "/catalog");
 	}
 

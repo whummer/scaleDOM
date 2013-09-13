@@ -1,4 +1,4 @@
-package at.ac.tuwien.dsg.scaledom.test.util.dom;
+package at.ac.tuwien.dsg.scaledom.util;
 
 import org.apache.xerces.dom.ParentNode;
 import org.w3c.dom.Document;
@@ -6,6 +6,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import at.ac.tuwien.dsg.scaledom.dom.ChildNodeList;
+
 
 /**
  * This utility class traverses a DOM tree, starting at a given root node (may also be the Document itself). For each

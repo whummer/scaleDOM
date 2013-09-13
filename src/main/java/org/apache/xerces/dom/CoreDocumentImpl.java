@@ -56,6 +56,8 @@ import org.w3c.dom.events.EventListener;
 import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSSerializer;
 
+import at.ac.tuwien.dsg.scaledom.dom.ScaleDomDocument;
+
 /**
  * The Document interface represents the entire HTML or XML document. Conceptually, it is the root of the document tree,
  * and provides the primary access to the document's data.
@@ -212,6 +214,12 @@ public class CoreDocumentImpl extends ParentNode implements Document {
 
 	} // static
 
+	// <ScaleDOM>
+	protected boolean isScaleDomEnabled() {
+		return this instanceof ScaleDomDocument;
+	}
+	// </ScaleDOM>
+	
 	//
 	// Constructors
 	//
@@ -318,7 +326,12 @@ public class CoreDocumentImpl extends ParentNode implements Document {
 
 			// Copy children into new document.
 			// <ScaleDOM>
-			final ChildNode firstChild = getFirstLoadedChildNode();
+			ChildNode firstChild = null;
+			if(isScaleDomEnabled()) {
+				firstChild = getFirstLoadedChildNode();
+			} else {
+				firstChild = this.firstChild;
+			}
 			// </ScaleDOM>
 			for (ChildNode kid = firstChild; kid != null; kid = kid.nextSibling) {
 				newdoc.appendChild(newdoc.importNode(kid, true, true, reversedIdentifiers));
@@ -2049,28 +2062,26 @@ public class CoreDocumentImpl extends ParentNode implements Document {
 
 	// NodeListCache pool
 
-	// <ScaleDOM>
-	// /**
-	// * Returns a NodeListCache for the given node.
-	// */
-	// NodeListCache getNodeListCache(ParentNode owner) {
-	// if (fFreeNLCache == null) {
-	// return new NodeListCache(owner);
-	// }
-	// NodeListCache c = fFreeNLCache;
-	// fFreeNLCache = fFreeNLCache.next;
-	// c.fChild = null;
-	// c.fChildIndex = -1;
-	// c.fLength = -1;
-	// // revoke previous ownership
-	// if (c.fOwner != null) {
-	// c.fOwner.fNodeListCache = null;
-	// }
-	// c.fOwner = owner;
-	// // c.next = null; not necessary, except for confused people...
-	// return c;
-	// }
-	// </ScaleDOM>
+	 /**
+	 * Returns a NodeListCache for the given node.
+	 */
+	NodeListCache getNodeListCache(ParentNode owner) {
+		if (fFreeNLCache == null) {
+			return new NodeListCache(owner);
+		}
+		NodeListCache c = fFreeNLCache;
+		fFreeNLCache = fFreeNLCache.next;
+		c.fChild = null;
+		c.fChildIndex = -1;
+		c.fLength = -1;
+		// revoke previous ownership
+		if (c.fOwner != null) {
+			c.fOwner.fNodeListCache = null;
+		}
+		c.fOwner = owner;
+		// c.next = null; not necessary, except for confused people...
+		return c;
+	}
 
 	/**
 	 * Puts the given NodeListCache in the free list. Note: The owner node can keep using it until we reuse it

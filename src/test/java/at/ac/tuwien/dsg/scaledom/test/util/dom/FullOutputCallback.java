@@ -7,6 +7,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import at.ac.tuwien.dsg.scaledom.util.DOMTraverserCallback;
+
 public class FullOutputCallback implements DOMTraverserCallback {
 
 	@Override

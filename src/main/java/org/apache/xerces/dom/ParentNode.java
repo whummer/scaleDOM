@@ -86,15 +86,15 @@ public abstract class ParentNode extends ChildNode {
 	/** Owner document. */
 	protected CoreDocumentImpl ownerDocument;
 
-	// <ScaleDOM>
-	// /** First child. */
-	// protected ChildNode firstChild = null;
-	//
-	// // transients
-	//
-	// /** NodeList cache */
-	// protected transient NodeListCache fNodeListCache = null;
+	/** First child. */
+	protected ChildNode firstChild = null;
 
+	// transients
+
+	/** NodeList cache */
+	protected transient NodeListCache fNodeListCache = null;
+
+	// <ScaleDOM>
 	/**
 	 * Weak reference to list of child nodes.<br/>
 	 * May be cleared by garbage collector if no hard reference points to at least one of the children.
@@ -110,6 +110,9 @@ public abstract class ParentNode extends ChildNode {
 	/** Namespace declarations on this node (as declared in underlying document source). */
 	private List<Namespace> namespaces;
 
+	protected boolean isScaleDomEnabled() {
+		return ownerDocument instanceof ScaleDomDocument;
+	}
 	// </ScaleDOM>
 
 	//
@@ -125,11 +128,13 @@ public abstract class ParentNode extends ChildNode {
 		this.ownerDocument = ownerDocument;
 
 		// <ScaleDOM>
-		final ScaleDomDocument doc = (ScaleDomDocument) ownerDocument;
-		this.children = new WeakChildNodeList(doc, this, null);
-		this.numberOfChildren = 0;
-		this.location = null;
-		this.namespaces = new ArrayList<>();
+		if(isScaleDomEnabled()) {
+			final ScaleDomDocument doc = (ScaleDomDocument) ownerDocument;
+			this.children = new WeakChildNodeList(doc, this, null);
+			this.numberOfChildren = 0;
+			this.location = null;
+			this.namespaces = new ArrayList<Namespace>();
+		}
 		// </ScaleDOM>
 	}
 
@@ -167,23 +172,30 @@ public abstract class ParentNode extends ChildNode {
 
 		// <ScaleDOM>
 
-		// // Need to break the association w/ original kids
-		// newnode.firstChild = null;
-		//
-		// // invalidate cache for children NodeList
-		// newnode.fNodeListCache = null;
+		if(isScaleDomEnabled()) {
+			newnode.children.clear();
+			newnode.numberOfChildren = deep ? numberOfChildren : 0;
+			newnode.location = location;
+			newnode.namespaces = namespaces;
+		} else {
+			// Need to break the association w/ original kids
+			newnode.firstChild = null;
 
-		newnode.children.clear();
-		newnode.numberOfChildren = deep ? numberOfChildren : 0;
-		newnode.location = location;
-		newnode.namespaces = namespaces;
+			// invalidate cache for children NodeList
+			newnode.fNodeListCache = null;
+		}
 
 		// </ScaleDOM>
 
 		// Then, if deep, clone the kids too.
 		if (deep) {
 			// <ScaleDOM>
-			final ChildNode firstChild = getFirstLoadedChildNode();
+			ChildNode firstChild = null;
+			if(isScaleDomEnabled()) {
+				firstChild = getFirstLoadedChildNode();
+			} else {
+				firstChild = this.firstChild;
+			}
 			// </ScaleDOM>
 			for (ChildNode child = firstChild; child != null; child = child.nextSibling) {
 				newnode.appendChild(child.cloneNode(true));
@@ -219,7 +231,12 @@ public abstract class ParentNode extends ChildNode {
 		super.setOwnerDocument(doc);
 		ownerDocument = doc;
 		// <ScaleDOM>
-		final ChildNode firstChild = getFirstLoadedChildNode();
+		ChildNode firstChild = null;
+		if(isScaleDomEnabled()) {
+			firstChild = getFirstLoadedChildNode();
+		} else {
+			firstChild = this.firstChild;
+		}
 		// </ScaleDOM>
 		for (ChildNode child = firstChild; child != null; child = child.nextSibling) {
 			child.setOwnerDocument(doc);
@@ -234,8 +251,11 @@ public abstract class ParentNode extends ChildNode {
 			synchronizeChildren();
 		}
 		// <ScaleDOM>
-		// return firstChild != null;
-		return numberOfChildren > 0;
+		if(isScaleDomEnabled()) {
+			return numberOfChildren > 0;
+		} else {
+			return firstChild != null;
+		}
 		// </ScaleDOM>
 	}
 
@@ -256,8 +276,11 @@ public abstract class ParentNode extends ChildNode {
 			synchronizeChildren();
 		}
 		// <ScaleDOM>
-		// return this;
-		return new ChildNodeList(getAllChildNodes());
+		if(isScaleDomEnabled()) {
+			return new ChildNodeList(getAllChildNodes());
+		} else {
+			return this;
+		}
 		// </ScaleDOM>
 
 	} // getChildNodes():NodeList
@@ -269,16 +292,19 @@ public abstract class ParentNode extends ChildNode {
 			synchronizeChildren();
 		}
 		// <ScaleDOM>
-		// return firstChild;
-		if (!hasChildNodes()) {
-			return null;
+		if(isScaleDomEnabled()) {
+			if (!hasChildNodes()) {
+				return null;
+			}
+			final LinkedList<ChildNode> allChildren = getAllChildNodes();
+			if (allChildren.isEmpty()) {
+				// Some error occurred (most probably while reloading the children)
+				return null;
+			}
+			return allChildren.getFirst();
+		} else {
+			 return firstChild;
 		}
-		final LinkedList<ChildNode> allChildren = getAllChildNodes();
-		if (allChildren.isEmpty()) {
-			// Some error occurred (most probably while reloading the children)
-			return null;
-		}
-		return allChildren.getFirst();
 		// </ScaleDOM>
 
 	} // getFirstChild():Node
@@ -290,33 +316,34 @@ public abstract class ParentNode extends ChildNode {
 			synchronizeChildren();
 		}
 		// <ScaleDOM>
-		// return lastChild();
-		if (!hasChildNodes()) {
-			return null;
+		if(isScaleDomEnabled()) {
+			if (!hasChildNodes()) {
+				return null;
+			}
+			final LinkedList<ChildNode> allChildren = getAllChildNodes();
+			if (allChildren.isEmpty()) {
+				// Some error occurred (most probably while reloading the children)
+				return null;
+			}
+			return allChildren.getLast();
+		} else {
+			return lastChild();
 		}
-		final LinkedList<ChildNode> allChildren = getAllChildNodes();
-		if (allChildren.isEmpty()) {
-			// Some error occurred (most probably while reloading the children)
-			return null;
-		}
-		return allChildren.getLast();
 		// </ScaleDOM>
 
 	} // getLastChild():Node
 
-	// <ScaleDOM>
-	// final ChildNode lastChild() {
-	// // last child is stored as the previous sibling of first child
-	// return firstChild != null ? firstChild.previousSibling : null;
-	// }
-	//
-	// final void lastChild(ChildNode node) {
-	// // store lastChild as previous sibling of first child
-	// if (firstChild != null) {
-	// firstChild.previousSibling = node;
-	// }
-	// }
-	// </ScaleDOM>
+	 final ChildNode lastChild() {
+		 // last child is stored as the previous sibling of first child
+		 return firstChild != null ? firstChild.previousSibling : null;
+	 }
+	
+	 final void lastChild(ChildNode node) {
+		 // store lastChild as previous sibling of first child
+		 if (firstChild != null) {
+			 firstChild.previousSibling = node;
+		 }
+	 }
 
 	/**
 	 * Move one or more node(s) to our list of children. Note that this implicitly removes them from their previous
@@ -453,86 +480,91 @@ public abstract class ParentNode extends ChildNode {
 		// Attach before and after
 
 		// <ScaleDOM>
+		if(isScaleDomEnabled()) {
 
-		// Note: firstChild.previousSibling == lastChild!!
-		// if (firstChild == null) {
-		// // this our first and only child
-		// firstChild = newInternal;
-		// newInternal.isFirstChild(true);
-		// newInternal.previousSibling = newInternal;
-		// } else {
-		// if (refInternal == null) {
-		// // this is an append
-		// ChildNode lastChild = firstChild.previousSibling;
-		// lastChild.nextSibling = newInternal;
-		// newInternal.previousSibling = lastChild;
-		// firstChild.previousSibling = newInternal;
-		// } else {
-		// // this is an insert
-		// if (refChild == firstChild) {
-		// // at the head of the list
-		// firstChild.isFirstChild(false);
-		// newInternal.nextSibling = firstChild;
-		// newInternal.previousSibling = firstChild.previousSibling;
-		// firstChild.previousSibling = newInternal;
-		// firstChild = newInternal;
-		// newInternal.isFirstChild(true);
-		// } else {
-		// // somewhere in the middle
-		// ChildNode prev = refInternal.previousSibling;
-		// newInternal.nextSibling = refInternal;
-		// prev.nextSibling = newInternal;
-		// refInternal.previousSibling = newInternal;
-		// newInternal.previousSibling = prev;
-		// }
-		// }
-		// }
-
-		final LinkedList<ChildNode> allChildren = getAllChildNodes();
-		if (allChildren.isEmpty()) {
-			// this our first and only child
-			allChildren.add(newInternal);
-		} else {
-			if (refInternal == null) {
-				// this is an append
-				final ChildNode lastChild = allChildren.getLast();
-				lastChild.nextSibling = newInternal;
-				newInternal.previousSibling = lastChild;
+			final LinkedList<ChildNode> allChildren = getAllChildNodes();
+			if (allChildren.isEmpty()) {
+				// this our first and only child
 				allChildren.add(newInternal);
 			} else {
-				// this is an insert
-				final ChildNode prev = refInternal.previousSibling;
-				refInternal.previousSibling = newInternal;
-				if (prev != null) {
-					prev.nextSibling = newInternal;
+				if (refInternal == null) {
+					// this is an append
+					final ChildNode lastChild = allChildren.getLast();
+					lastChild.nextSibling = newInternal;
+					newInternal.previousSibling = lastChild;
+					allChildren.add(newInternal);
+				} else {
+					// this is an insert
+					final ChildNode prev = refInternal.previousSibling;
+					refInternal.previousSibling = newInternal;
+					if (prev != null) {
+						prev.nextSibling = newInternal;
+					}
+					newInternal.previousSibling = prev;
+					newInternal.nextSibling = refInternal;
+					allChildren.add(allChildren.indexOf(refInternal), newInternal);
 				}
-				newInternal.previousSibling = prev;
-				newInternal.nextSibling = refInternal;
-				allChildren.add(allChildren.indexOf(refInternal), newInternal);
 			}
-		}
 
+		} else {
+
+			// Note: firstChild.previousSibling == lastChild!!
+			 if (firstChild == null) {
+				 // this our first and only child
+				 firstChild = newInternal;
+				 newInternal.isFirstChild(true);
+				 newInternal.previousSibling = newInternal;
+			 } else {
+				 if (refInternal == null) {
+					 // this is an append
+					 ChildNode lastChild = firstChild.previousSibling;
+					 lastChild.nextSibling = newInternal;
+					 newInternal.previousSibling = lastChild;
+					 firstChild.previousSibling = newInternal;
+				 } else {
+					 // this is an insert
+					 if (refChild == firstChild) {
+						 // at the head of the list
+						 firstChild.isFirstChild(false);
+						 newInternal.nextSibling = firstChild;
+						 newInternal.previousSibling = firstChild.previousSibling;
+						 firstChild.previousSibling = newInternal;
+						 firstChild = newInternal;
+						 newInternal.isFirstChild(true);
+					 } else {
+						 // somewhere in the middle
+						 ChildNode prev = refInternal.previousSibling;
+						 newInternal.nextSibling = refInternal;
+						 prev.nextSibling = newInternal;
+						 refInternal.previousSibling = newInternal;
+						 newInternal.previousSibling = prev;
+					 }
+				 }
+			 }
+		}
 		// </ScaleDOM>
 
 		changed();
 
 		// <ScaleDOM>
-		// // update cached length if we have any
-		// if (fNodeListCache != null) {
-		// if (fNodeListCache.fLength != -1) {
-		// fNodeListCache.fLength++;
-		// }
-		// if (fNodeListCache.fChildIndex != -1) {
-		// // if we happen to insert just before the cached node, update
-		// // the cache to the new node to match the cached index
-		// if (fNodeListCache.fChild == refInternal) {
-		// fNodeListCache.fChild = newInternal;
-		// } else {
-		// // otherwise just invalidate the cache
-		// fNodeListCache.fChildIndex = -1;
-		// }
-		// }
-		// }
+		if(!isScaleDomEnabled()) {
+			 // update cached length if we have any
+			 if (fNodeListCache != null) {
+				 if (fNodeListCache.fLength != -1) {
+					 fNodeListCache.fLength++;
+				 }
+				 if (fNodeListCache.fChildIndex != -1) {
+					 // if we happen to insert just before the cached node, update
+					 // the cache to the new node to match the cached index
+					 if (fNodeListCache.fChild == refInternal) {
+						 fNodeListCache.fChild = newInternal;
+					 } else {
+					 // otherwise just invalidate the cache
+						 fNodeListCache.fChildIndex = -1;
+					 }
+				 }
+			 }
+		}
 		// </ScaleDOM>
 
 		// notify document
@@ -582,65 +614,70 @@ public abstract class ParentNode extends ChildNode {
 		ownerDocument.removingNode(this, oldInternal, replace);
 
 		// <ScaleDOM>
-		// // update cached length if we have any
-		// if (fNodeListCache != null) {
-		// if (fNodeListCache.fLength != -1) {
-		// fNodeListCache.fLength--;
-		// }
-		// if (fNodeListCache.fChildIndex != -1) {
-		// // if the removed node is the cached node
-		// // move the cache to its (soon former) previous sibling
-		// if (fNodeListCache.fChild == oldInternal) {
-		// fNodeListCache.fChildIndex--;
-		// fNodeListCache.fChild = oldInternal.previousSibling();
-		// } else {
-		// // otherwise just invalidate the cache
-		// fNodeListCache.fChildIndex = -1;
-		// }
-		// }
-		// }
+		if(!isScaleDomEnabled()) {
+			 // update cached length if we have any
+			 if (fNodeListCache != null) {
+				 if (fNodeListCache.fLength != -1) {
+					 fNodeListCache.fLength--;
+				 }
+				 if (fNodeListCache.fChildIndex != -1) {
+					 // if the removed node is the cached node
+					 // move the cache to its (soon former) previous sibling
+					 if (fNodeListCache.fChild == oldInternal) {
+						 fNodeListCache.fChildIndex--;
+						 fNodeListCache.fChild = oldInternal.previousSibling();
+					 } else {
+						 // otherwise just invalidate the cache
+						 fNodeListCache.fChildIndex = -1;
+					 }
+				 }
+			 }
+		}
 		// </ScaleDOM>
 
 		// Patch linked list around oldChild
 
 		// <ScaleDOM>
 
-		// // Note: lastChild == firstChild.previousSibling
-		// if (oldInternal == firstChild) {
-		// // removing first child
-		// oldInternal.isFirstChild(false);
-		// firstChild = oldInternal.nextSibling;
-		// if (firstChild != null) {
-		// firstChild.isFirstChild(true);
-		// firstChild.previousSibling = oldInternal.previousSibling;
-		// }
-		// } else {
-		// ChildNode prev = oldInternal.previousSibling;
-		// ChildNode next = oldInternal.nextSibling;
-		// prev.nextSibling = next;
-		// if (next == null) {
-		// // removing last child
-		// firstChild.previousSibling = prev;
-		// } else {
-		// // removing some other child in the middle
-		// next.previousSibling = prev;
-		// }
-		// }
+		if(isScaleDomEnabled()) {
 
-		final LinkedList<ChildNode> allChildren = getAllChildNodes();
+			final LinkedList<ChildNode> allChildren = getAllChildNodes();
 
-		final ChildNode prev = oldInternal.previousSibling;
-		final ChildNode next = oldInternal.nextSibling;
+			final ChildNode prev = oldInternal.previousSibling;
+			final ChildNode next = oldInternal.nextSibling;
 
-		if (prev != null) {
-			prev.nextSibling = next;
+			if (prev != null) {
+				prev.nextSibling = next;
+			}
+			if (next != null) {
+				next.previousSibling = prev;
+			}
+
+			allChildren.remove(oldInternal);
+
+		} else {
+			 // Note: lastChild == firstChild.previousSibling
+			 if (oldInternal == firstChild) {
+				 // removing first child
+				 oldInternal.isFirstChild(false);
+				 firstChild = oldInternal.nextSibling;
+				 if (firstChild != null) {
+					 firstChild.isFirstChild(true);
+					 firstChild.previousSibling = oldInternal.previousSibling;
+				 }
+			 } else {
+				 ChildNode prev = oldInternal.previousSibling;
+				 ChildNode next = oldInternal.nextSibling;
+				 prev.nextSibling = next;
+				 if (next == null) {
+					 // removing last child
+					 firstChild.previousSibling = prev;
+				 } else {
+					 // removing some other child in the middle
+					 next.previousSibling = prev;
+				 }
+			 }
 		}
-		if (next != null) {
-			next.previousSibling = prev;
-		}
-
-		allChildren.remove(oldInternal);
-
 		// </ScaleDOM>
 
 		// Save previous sibling for normalization checking.
@@ -756,50 +793,49 @@ public abstract class ParentNode extends ChildNode {
 	// NodeList methods
 	//
 
-	// <ScaleDOM>
-	// /**
-	// * Count the immediate children of this node. Use to implement NodeList.getLength().
-	// *
-	// * @return int
-	// */
-	// private int nodeListGetLength() {
-	//
-	// if (fNodeListCache == null) {
-	// if (needsSyncChildren()) {
-	// synchronizeChildren();
-	// }
-	// // get rid of trivial cases
-	// if (firstChild == null) {
-	// return 0;
-	// }
-	// if (firstChild == lastChild()) {
-	// return 1;
-	// }
-	// // otherwise request a cache object
-	// fNodeListCache = ownerDocument.getNodeListCache(this);
-	// }
-	// if (fNodeListCache.fLength == -1) { // is the cached length invalid ?
-	// int l;
-	// ChildNode n;
-	// // start from the cached node if we have one
-	// if (fNodeListCache.fChildIndex != -1 && fNodeListCache.fChild != null) {
-	// l = fNodeListCache.fChildIndex;
-	// n = fNodeListCache.fChild;
-	// } else {
-	// n = firstChild;
-	// l = 0;
-	// }
-	// while (n != null) {
-	// l++;
-	// n = n.nextSibling;
-	// }
-	// fNodeListCache.fLength = l;
-	// }
-	//
-	// return fNodeListCache.fLength;
-	//
-	// } // nodeListGetLength():int
-	// </ScaleDOM>
+	 /**
+	 * Count the immediate children of this node. Use to implement NodeList.getLength().
+	 *
+	 * @return int
+	 */
+	 private int nodeListGetLength() {
+
+		if (fNodeListCache == null) {
+			if (needsSyncChildren()) {
+				synchronizeChildren();
+			}
+			// get rid of trivial cases
+			if (firstChild == null) {
+				return 0;
+			}
+			if (firstChild == lastChild()) {
+				return 1;
+			}
+			// otherwise request a cache object
+			fNodeListCache = ownerDocument.getNodeListCache(this);
+		}
+		if (fNodeListCache.fLength == -1) { // is the cached length invalid ?
+			int l;
+			ChildNode n;
+			// start from the cached node if we have one
+			if (fNodeListCache.fChildIndex != -1
+					&& fNodeListCache.fChild != null) {
+				l = fNodeListCache.fChildIndex;
+				n = fNodeListCache.fChild;
+			} else {
+				n = firstChild;
+				l = 0;
+			}
+			while (n != null) {
+				l++;
+				n = n.nextSibling;
+			}
+			fNodeListCache.fLength = l;
+		}
+
+		return fNodeListCache.fLength;
+
+	 } // nodeListGetLength():int
 
 	/**
 	 * NodeList method: Count the immediate children of this node
@@ -808,77 +844,78 @@ public abstract class ParentNode extends ChildNode {
 	 */
 	public int getLength() {
 		// <ScaleDOM>
-		// return nodeListGetLength();
-		return numberOfChildren;
+		if(isScaleDomEnabled()) {
+			return numberOfChildren;
+		} else {
+			return nodeListGetLength();
+		}
 		// </ScaleDOM>
 	}
 
-	// <ScaleDOM>
-	// /**
-	// * Return the Nth immediate child of this node, or null if the index is out of bounds. Use to implement
-	// * NodeList.item().
-	// *
-	// * @param index int
-	// */
-	// private Node nodeListItem(int index) {
-	//
-	// if (fNodeListCache == null) {
-	// if (needsSyncChildren()) {
-	// synchronizeChildren();
-	// }
-	// // get rid of trivial case
-	// if (firstChild == lastChild()) {
-	// return index == 0 ? firstChild : null;
-	// }
-	// // otherwise request a cache object
-	// fNodeListCache = ownerDocument.getNodeListCache(this);
-	// }
-	// int i = fNodeListCache.fChildIndex;
-	// ChildNode n = fNodeListCache.fChild;
-	// boolean firstAccess = true;
-	// // short way
-	// if (i != -1 && n != null) {
-	// firstAccess = false;
-	// if (i < index) {
-	// while (i < index && n != null) {
-	// i++;
-	// n = n.nextSibling;
-	// }
-	// } else if (i > index) {
-	// while (i > index && n != null) {
-	// i--;
-	// n = n.previousSibling();
-	// }
-	// }
-	// } else {
-	// // long way
-	// if (index < 0) {
-	// return null;
-	// }
-	// n = firstChild;
-	// for (i = 0; i < index && n != null; i++) {
-	// n = n.nextSibling;
-	// }
-	// }
-	//
-	// // release cache if reaching last child or first child
-	// if (!firstAccess && (n == firstChild || n == lastChild())) {
-	// fNodeListCache.fChildIndex = -1;
-	// fNodeListCache.fChild = null;
-	// ownerDocument.freeNodeListCache(fNodeListCache);
-	// // we can keep using the cache until it is actually reused
-	// // fNodeListCache will be nulled by the pool (document) if that
-	// // happens.
-	// // fNodeListCache = null;
-	// } else {
-	// // otherwise update it
-	// fNodeListCache.fChildIndex = i;
-	// fNodeListCache.fChild = n;
-	// }
-	// return n;
-	//
-	// } // nodeListItem(int):Node
-	// </ScaleDOM>
+	 /**
+	 * Return the Nth immediate child of this node, or null if the index is out of bounds. Use to implement
+	 * NodeList.item().
+	 *
+	 * @param index int
+	 */
+	private Node nodeListItem(int index) {
+
+		if (fNodeListCache == null) {
+			if (needsSyncChildren()) {
+				synchronizeChildren();
+			}
+			// get rid of trivial case
+			if (firstChild == lastChild()) {
+				return index == 0 ? firstChild : null;
+			}
+			// otherwise request a cache object
+			fNodeListCache = ownerDocument.getNodeListCache(this);
+		}
+		int i = fNodeListCache.fChildIndex;
+		ChildNode n = fNodeListCache.fChild;
+		boolean firstAccess = true;
+		// short way
+		if (i != -1 && n != null) {
+			firstAccess = false;
+			if (i < index) {
+				while (i < index && n != null) {
+					i++;
+					n = n.nextSibling;
+				}
+			} else if (i > index) {
+				while (i > index && n != null) {
+					i--;
+					n = n.previousSibling();
+				}
+			}
+		} else {
+			// long way
+			if (index < 0) {
+				return null;
+			}
+			n = firstChild;
+			for (i = 0; i < index && n != null; i++) {
+				n = n.nextSibling;
+			}
+		}
+
+		// release cache if reaching last child or first child
+		if (!firstAccess && (n == firstChild || n == lastChild())) {
+			fNodeListCache.fChildIndex = -1;
+			fNodeListCache.fChild = null;
+			ownerDocument.freeNodeListCache(fNodeListCache);
+			// we can keep using the cache until it is actually reused
+			// fNodeListCache will be nulled by the pool (document) if that
+			// happens.
+			// fNodeListCache = null;
+		} else {
+			// otherwise update it
+			fNodeListCache.fChildIndex = i;
+			fNodeListCache.fChild = n;
+		}
+		return n;
+
+	} // nodeListItem(int):Node
 
 	/**
 	 * NodeList method: Return the Nth immediate child of this node, or null if the index is out of bounds.
@@ -888,45 +925,46 @@ public abstract class ParentNode extends ChildNode {
 	 */
 	public Node item(int index) {
 		// <ScaleDOM>
-		// return nodeListItem(index);
-		return getChildNodes().item(index);
+		if(isScaleDomEnabled()) {
+			return getChildNodes().item(index);
+		} else {
+			return nodeListItem(index);
+		}
 		// </ScaleDOM>
 	} // item(int):Node
 
-	// <ScaleDOM>
-	// /**
-	// * Create a NodeList to access children that is use by subclass elements that have methods named getLength() or
-	// * item(int). ChildAndParentNode optimizes getChildNodes() by implementing NodeList itself. However if a subclass
-	// * Element implements methods with the same name as the NodeList methods, they will override the actually methods
-	// in
-	// * this class.
-	// * <p>
-	// * To use this method, the subclass should implement getChildNodes() and have it call this method. The resulting
-	// * NodeList instance maybe shared and cached in a transient field, but the cached value must be cleared if the
-	// node
-	// * is cloned.
-	// */
-	// protected final NodeList getChildNodesUnoptimized() {
-	// if (needsSyncChildren()) {
-	// synchronizeChildren();
-	// }
-	// return new NodeList() {
-	// /**
-	// * @see NodeList.getLength()
-	// */
-	// public int getLength() {
-	// return nodeListGetLength();
-	// } // getLength():int
-	//
-	// /**
-	// * @see NodeList.item(int)
-	// */
-	// public Node item(int index) {
-	// return nodeListItem(index);
-	// } // item(int):Node
-	// };
-	// } // getChildNodesUnoptimized():NodeList
-	// </ScaleDOM>
+	 /**
+	 * Create a NodeList to access children that is use by subclass elements that have methods named getLength() or
+	 * item(int). ChildAndParentNode optimizes getChildNodes() by implementing NodeList itself. However if a subclass
+	 * Element implements methods with the same name as the NodeList methods, they will override the actually methods
+	 in
+	 * this class.
+	 * <p>
+	 * To use this method, the subclass should implement getChildNodes() and have it call this method. The resulting
+	 * NodeList instance maybe shared and cached in a transient field, but the cached value must be cleared if the
+	 node
+	 * is cloned.
+	 */
+	protected final NodeList getChildNodesUnoptimized() {
+		if (needsSyncChildren()) {
+			synchronizeChildren();
+		}
+		return new NodeList() {
+			/**
+			 * @see NodeList.getLength()
+			 */
+			public int getLength() {
+				return nodeListGetLength();
+			} // getLength():int
+
+			/**
+			 * @see NodeList.item(int)
+			 */
+			public Node item(int index) {
+				return nodeListItem(index);
+			} // item(int):Node
+		};
+	} // getChildNodesUnoptimized():NodeList
 
 	//
 	// DOM2: methods, getters, setters
@@ -948,7 +986,12 @@ public abstract class ParentNode extends ChildNode {
 		}
 		ChildNode kid;
 		// <ScaleDOM>
-		final ChildNode firstChild = getFirstLoadedChildNode();
+		ChildNode firstChild = null;
+		if(isScaleDomEnabled()) {
+			firstChild = getFirstLoadedChildNode();
+		} else {
+			firstChild = this.firstChild;
+		}
 		// </ScaleDOM>
 		for (kid = firstChild; kid != null; kid = kid.nextSibling) {
 			kid.normalize();
@@ -1005,7 +1048,12 @@ public abstract class ParentNode extends ChildNode {
 
 			// Recursively set kids
 			// <ScaleDOM>
-			final ChildNode firstChild = getFirstLoadedChildNode();
+			ChildNode firstChild = null;
+			if(isScaleDomEnabled()) {
+				firstChild = getFirstLoadedChildNode();
+			} else {
+				firstChild = this.firstChild;
+			}
 			// </ScaleDOM>
 			for (ChildNode mykid = firstChild; mykid != null; mykid = mykid.nextSibling) {
 				if (mykid.getNodeType() != Node.ENTITY_REFERENCE_NODE) {
@@ -1209,7 +1257,7 @@ public abstract class ParentNode extends ChildNode {
 		LinkedList<ChildNode> loadedChildren = children.get();
 
 		if (loadedChildren == null) {
-			loadedChildren = new LinkedList<>();
+			loadedChildren = new LinkedList<ChildNode>();
 
 			final ScaleDomDocument doc = (ScaleDomDocument) ownerDocument;
 			children = new WeakChildNodeList(doc, this, loadedChildren);
