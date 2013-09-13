@@ -10,11 +10,20 @@ Please refer to the folder "example" for a small sample project.
 The class ScaleDomParsingTest illustrates how to dynamically 
 enable/disable ScaleDOM parsing.
 
+To run the sample project, first build and install ScaleDOM using
+
+$ mvn install
+
+and then run the tests in the "example" project:
+
+$ cd example
+$ mvn test
+
 Project Details 
 ---------------
 
 For detailed information, please refer to the document doc/ScaleDOM.pdf, 
-which also contains a small performance evaluation of scaleDOM.
+which also contains a small performance evaluation of ScaleDOM.
 
 Change Log
 ----------
