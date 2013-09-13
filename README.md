@@ -8,16 +8,27 @@ Usage
 
 Please refer to the folder "example" for a small sample project.
 The class ScaleDomParsingTest illustrates how to dynamically 
-enable/disable ScaleDOM parsing.
+enable/disable ScaleDOM parsing using the corresponding system property:
+
+```
+System.setProperty(
+    "javax.xml.parsers.DocumentBuilderFactory", 
+    ScaleDomDocumentBuilderFactory.class.getName()
+);
+```
 
 To run the sample project, first build and install ScaleDOM using
 
-$ mvn install
+```
+mvn install
+```
 
 and then run the tests in the "example" project:
 
-$ cd example
-$ mvn test
+```
+cd example
+mvn test
+```
 
 Project Details 
 ---------------

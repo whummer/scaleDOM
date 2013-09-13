@@ -4,6 +4,7 @@ import java.io.File;
 
 import org.w3c.dom.Document;
 
+import at.ac.tuwien.dsg.scaledom.ScaleDomDocumentBuilderFactory;
 import at.ac.tuwien.dsg.scaledom.test.perf.TestData.TestFile;
 import at.ac.tuwien.dsg.scaledom.test.perf.util.MeasuredTask;
 import at.ac.tuwien.dsg.scaledom.test.perf.util.dom.FirstOnLevelCallback;
@@ -25,8 +26,8 @@ public class DOMTraversalTest extends TestBase {
 	@SuppressWarnings("unused")
 	public static void main(final String[] args) {
 		try {
-			//System.setProperty("javax.xml.parsers.DocumentBuilderFactory", 
-			//		ScaleDomDocumentBuilderFactory.class.getName());
+			System.setProperty("javax.xml.parsers.DocumentBuilderFactory", 
+					ScaleDomDocumentBuilderFactory.class.getName());
 			final Document doc = parseDocument(FILE, FILE_ENCODING);
 
 			// Traverse document
