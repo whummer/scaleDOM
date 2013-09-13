@@ -3,6 +3,17 @@ ScaleDOM
 
 A lazy-loading DOM implementation for processing huge XML documents.
 
+Synopsis
+--------
+
+ScaleDOM is a Xerces-based XML DOM parser which has a small memory 
+footprint due to lazy loading of XML nodes. It only keeps a portion 
+of the XML document in memory and re-loads nodes from the source 
+file when necessary. 
+
+If you run into "OutOfMemoryError" using your standard DOM parser, 
+ScaleDOM may be just the right solution for you.
+
 Usage 
 -----
 
