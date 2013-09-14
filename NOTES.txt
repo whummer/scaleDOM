@@ -65,8 +65,6 @@
 	o Why do we edit org.apache.xerces.dom.ParentNode instead of providing proxy classes?
 		o Unfortunately Xerces' internal implementation casts nodes to its own internal classes and sometimes accesses
 		  their fields directly without using an accessor method (something you can't intercept with a proxy).
-		o Furthermore we can save memory by removing unused fields and can easily replace each call of getChildNodes()
-		  with either getCurrentlyLoadedChildNodes() or getAllChildNodes().
 		o Another solution would be aspect-oriented programming, however, AOP costs a lot of performance and in some
 		  cases it has been found that adapting the original classes was much easier than AOP would have been. 
 

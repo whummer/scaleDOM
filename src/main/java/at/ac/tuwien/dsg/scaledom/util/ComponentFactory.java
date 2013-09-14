@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -115,13 +116,16 @@ public class ComponentFactory {
 		try {
 			return ConstructorUtils.invokeConstructor(implType, args);
 		} catch (final IllegalAccessException ex) {
-			throw new InstantiationException("Type '" + implType.getName() + "' could not be instantiated: "
+			throw new InstantiationException("Type '" + implType.getName() + 
+					"' with arguments " + Arrays.asList(args) + " could not be instantiated: "
 					+ ex.getMessage());
 		} catch (final InvocationTargetException ex) {
-			throw new InstantiationException("Type '" + implType.getName() + "' could not be instantiated: "
+			throw new InstantiationException("Type '" + implType.getName() + 
+					"' with arguments " + Arrays.asList(args) + " could not be instantiated: "
 					+ ex.getMessage());
 		} catch (final NoSuchMethodException ex) {
-			throw new InstantiationException("Type '" + implType.getName() + "' could not be instantiated: "
+			throw new InstantiationException("Type '" + implType.getName() + 
+					"' with arguments " + Arrays.asList(args) + " could not be instantiated: "
 					+ ex.getMessage());
 		}
 	}

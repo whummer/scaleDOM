@@ -4,12 +4,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.RandomAccessFile;
 import java.io.Reader;
-import java.nio.channels.FileChannel;
+import java.net.HttpURLConnection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,25 +21,25 @@ import at.ac.tuwien.dsg.scaledom.parser.XmlEventLocation;
 import at.ac.tuwien.dsg.scaledom.util.Utils;
 
 /**
- * <code>FileReaderFactory</code> implementation.<br/>
- * This implementation provides a <code>Reader</code> based upon <code>FileInputStream</code> for full file reading and
- * one based upon <code>RandomAccessFile</code> for file range reading.
+ * <code>HttpReaderFactory</code> implementation.<br/>
+ * This implementation provides a <code>Reader</code> based upon URL <code>InputStream</code> for 
+ * full file reading and one based upon <code>RandomAccessFile</code> for file range reading.
  * 
- * @author Dominik Rauch
+ * @author Waldemar Hummer
  */
-public class FileReaderFactory extends ReaderFactory {
+public class HttpReaderFactory extends ReaderFactory {
 
 	/** Logger. */
-	private final static Logger log = LoggerFactory.getLogger(FileReaderFactory.class);
+	private final static Logger log = LoggerFactory.getLogger(HttpReaderFactory.class);
 
-	/** Underlying file as RandomAccessFile. */
-	private RandomAccessFile randomAccessFile;
-	/** File channel. */
-	private FileChannel channel;
+	/** Underlying URL as connection. */
+	private HttpURLConnection urlConnection;
 	/** Number of bytes per character. */
 	private final int numberOfBytesPerCharacter;
 	/** Start offset of the currently obtained reader. */
 	private long readerOffset;
+	/** Content length of the HTTP document. */
+	private Long contentLength = null;
 
 	/**
 	 * Default constructor.
@@ -48,7 +47,7 @@ public class FileReaderFactory extends ReaderFactory {
 	 * @param source the underlying document source.
 	 * @throws IOException If some I/O error occurs.
 	 */
-	public FileReaderFactory(final FileDocumentSource source) throws IOException {
+	public HttpReaderFactory(final HttpDocumentSource source) throws IOException {
 		super(source);
 		numberOfBytesPerCharacter = Utils.getNumberOfBytesPerCharacter(source.getEncoding());
 		readerOffset = 0;
@@ -59,10 +58,11 @@ public class FileReaderFactory extends ReaderFactory {
 
 	@Override
 	public Reader newReader() throws IOException {
-		final FileDocumentSource source = (FileDocumentSource) getDocumentSource();
+		final HttpDocumentSource source = (HttpDocumentSource) getDocumentSource();
 		readerOffset = 0;
-		Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(source.getFile()), source.getEncoding()));
-		return new ReaderWithSystemID(source.getFile().toURI().toString(), reader);
+		InputStream is = source.getUrl().openConnection().getInputStream();
+		Reader reader = new BufferedReader(new InputStreamReader(is, source.getEncoding()));
+		return new ReaderWithSystemID(source.getUrl().toExternalForm(), reader);
 	}
 
 	@Override
@@ -70,26 +70,32 @@ public class FileReaderFactory extends ReaderFactory {
 		checkNotNull(location, "Argument location must not be null");
 		checkArgument(location instanceof FileNodeLocation, "Argument location must be of type FileNodeLocation");
 
-		final FileDocumentSource source = (FileDocumentSource) getDocumentSource();
+		final HttpDocumentSource source = (HttpDocumentSource) getDocumentSource();
 
-		if (randomAccessFile == null) {
-			// Open file only on first demand, however, keep it open until factory is closed
-			randomAccessFile = new RandomAccessFile(source.getFile(), "r");
-			channel = randomAccessFile.getChannel();
+		if(contentLength == null) {
+			urlConnection = (HttpURLConnection)source.getUrl().openConnection();
+			contentLength = urlConnection.getContentLengthLong();
 		}
+		// Close and re-open URL connection
+		if (urlConnection != null) {
+			urlConnection.disconnect();
+		}
+		urlConnection = (HttpURLConnection)source.getUrl().openConnection();
 
 		final FileNodeLocation fileLocation = (FileNodeLocation) location;
 		readerOffset = fileLocation.getStartOffset();
 
-		Reader reader = new BufferedReader(new InputStreamReader(new FileChannelRangeInputStream(channel,
-				fileLocation.getStartOffset(), fileLocation.getEndOffset()), source.getEncoding()));
-		return new ReaderWithSystemID(source.getFile().toURI().toString(), reader);
+		Reader reader = new BufferedReader(new InputStreamReader(
+				new HttpChannelRangeInputStream(urlConnection, contentLength,
+				fileLocation.getStartOffset(), fileLocation.getEndOffset()), 
+				source.getEncoding()));
+		return new ReaderWithSystemID(source.getUrl().toExternalForm(), reader);
 	}
 
 	@Override
 	public void close() throws IOException {
-		if (randomAccessFile != null) {
-			randomAccessFile.close();
+		if (urlConnection != null) {
+			urlConnection.disconnect();
 		}
 	}
 
@@ -98,7 +104,7 @@ public class FileReaderFactory extends ReaderFactory {
 		final int sizefac = location instanceof XmlEventCharLocation ? numberOfBytesPerCharacter : 1;
 		if (sizefac == -1) {
 			// problem: got XmlEventCharLocation but file is variable-width encoded -> throw exception
-			final FileDocumentSource fds = (FileDocumentSource) getDocumentSource();
+			final HttpDocumentSource fds = (HttpDocumentSource) getDocumentSource();
 			throw new IllegalArgumentException("File is variable-width encoded (" + fds.getEncoding()
 					+ "), you must use an XmlParser implementation which is able to output byte locations.");
 		}

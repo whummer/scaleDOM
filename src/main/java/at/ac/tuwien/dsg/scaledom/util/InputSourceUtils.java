@@ -7,12 +7,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.Charset;
 
 import org.xml.sax.InputSource;
 
 import at.ac.tuwien.dsg.scaledom.ScaleDomDocumentSource;
 import at.ac.tuwien.dsg.scaledom.io.impl.FileDocumentSource;
+import at.ac.tuwien.dsg.scaledom.io.impl.HttpDocumentSource;
 
 /**
  * Various utilities for <code>InputSource</code> objects.
@@ -37,12 +39,22 @@ public class InputSourceUtils {
 		checkArgument(Charset.isSupported(defaultEncoding), "Default encoding '%s' is not supported.", defaultEncoding);
 
 		try {
-			// Get File from InputSource
-			final File file = new File(new URI(is.getSystemId()));
-			final String isEncoding = is.getEncoding();
-			final String encoding = isEncoding != null ? isEncoding : defaultEncoding;
+			String uri = is.getSystemId().trim();
+			if(uri.startsWith("file://")) {
+				// Get File from InputSource
+				final File file = new File(new URI(is.getSystemId()));
+				final String isEncoding = is.getEncoding();
+				final String encoding = isEncoding != null ? isEncoding : defaultEncoding;
 
-			return new FileDocumentSource(file, encoding);
+				return new FileDocumentSource(file, encoding);
+			} else {
+				// Get connection from URL
+				URL url = new URL(uri);
+				final String isEncoding = is.getEncoding();
+				final String encoding = isEncoding != null ? isEncoding : defaultEncoding;
+
+				return new HttpDocumentSource(url, encoding);
+			}
 		} catch (final URISyntaxException ex) {
 			throw new IOException(ex);
 		}

@@ -50,6 +50,10 @@ which also contains a small performance evaluation of ScaleDOM.
 Change Log
 ----------
 
+- 2013-09-14: v1.2
+  * parse/traverse XML directly from a URL connection. Portions of the 
+    document are lazily loaded using the "Range=startByte-endByte" HTTP 
+    header.
 - 2013-09-13: v1.1
   * allow dynamic switching between ScaleDOM and Xerces using system 
     property "javax.xml.parsers.DocumentBuilderFactory"

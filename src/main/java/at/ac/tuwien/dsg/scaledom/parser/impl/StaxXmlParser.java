@@ -21,6 +21,7 @@ import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import at.ac.tuwien.dsg.scaledom.io.ReaderWithSystemID;
 import at.ac.tuwien.dsg.scaledom.parser.XmlEventCharLocation;
 import at.ac.tuwien.dsg.scaledom.parser.XmlEventLocation;
 import at.ac.tuwien.dsg.scaledom.parser.XmlParser;
@@ -73,7 +74,13 @@ public class StaxXmlParser extends XmlParser {
 		XMLEventReader xmlEventReader = null;
 		try {
 			// Create event reader
-			xmlEventReader = inputFactory.createXMLEventReader(reader);
+			if(reader instanceof ReaderWithSystemID) {
+				ReaderWithSystemID _reader = (ReaderWithSystemID)reader;
+				xmlEventReader = inputFactory.createXMLEventReader(
+						_reader.getSystemID(), _reader.getReader());
+			} else {
+				xmlEventReader = inputFactory.createXMLEventReader(reader);
+			}
 
 			// Do parsing
 			while (xmlEventReader.hasNext()) {

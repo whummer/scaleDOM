@@ -3,7 +3,7 @@ package at.ac.tuwien.dsg.scaledom;
 import java.nio.charset.StandardCharsets;
 
 import at.ac.tuwien.dsg.scaledom.io.ReaderFactory;
-import at.ac.tuwien.dsg.scaledom.io.impl.FileReaderFactory;
+import at.ac.tuwien.dsg.scaledom.io.impl.DelegatorReaderFactory;
 import at.ac.tuwien.dsg.scaledom.lazy.LazyLoadingStrategy;
 import at.ac.tuwien.dsg.scaledom.lazy.impl.StepLazyLoadingStrategy;
 import at.ac.tuwien.dsg.scaledom.parser.XmlParser;
@@ -52,7 +52,7 @@ public final class ScaleDom {
 	static final Class<? extends XmlParser> DEFAULT_XMLPARSER_IMPLEMENTATION = StaxXmlParser.class;
 
 	/** Default ReaderFactory implementation. */
-	static final Class<? extends ReaderFactory> DEFAULT_READERFACTORY_IMPLEMENTATION = FileReaderFactory.class;
+	static final Class<? extends ReaderFactory> DEFAULT_READERFACTORY_IMPLEMENTATION = DelegatorReaderFactory.class;
 
 	/** Default LazyLoadingStrategy implementation. */
 	static final Class<? extends LazyLoadingStrategy> DEFAULT_LAZYLOADINGSTRATEGY_IMPLEMENTATION = StepLazyLoadingStrategy.class;
